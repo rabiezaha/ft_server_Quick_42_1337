@@ -15,29 +15,42 @@ RUN apt-get update \
 RUN apt-get -y install nginx
 
 #For PHP install
-RUN apt-get install -y php7.3  php7.3-fpm php7.3-mbstring php7.3-mysql 
+RUN apt-get install -y php7.3 php7.3-common php7.3-mbstring php7.3-fpm php7.3-mysql 
 
 #For Mysql install 
 RUN wget http://repo.mysql.com/mysql-apt-config_0.8.14-1_all.deb \
-		&& apt-get install -y gnupg \
-		&& apt-get install -y lsb-release \
-		&& dpkg -i mysql-apt-config_0.8.14-1_all.deb \
-		&& apt-get update \
-		&& apt-get install -y mysql-server 
+	&& apt-get install -y gnupg \
+	&& apt-get install -y lsb-release \
+	&& dpkg -i mysql-apt-config_0.8.14-1_all.deb \
+	&& apt-get update \
+	&& apt-get install -y mysql-server 
+
+#For PhpMyAdmin install & config
+RUN wget https://files.phpmyadmin.net/phpMyAdmin/4.9.0.1/phpMyAdmin-4.9.0.1-all-languages.tar.gz \
+	&& tar -zxvf phpMyAdmin-4.9.0.1-all-languages.tar.gz \
+	&& mv phpMyAdmin-4.9.0.1-all-languages /usr/share/phpMyAdmin
 
 #For WordPress Download 
-RUN wget -P /var/www/html/ https://wordpress.org/latest.zip \
-	&& unzip /var/www/html/latest.zip -d /var/www/html/ \
-	&& cp /var/www/html/wordpress/wp-config-sample.php /var/www/html/wordpress/wp-config.php \
-	&& rm -rf /var/www/html/latest.zip
+RUN wget -P /var/www/ https://wordpress.org/latest.zip \
+	&& unzip /var/www/latest.zip -d /var/www/ \
+	&& rm -rf /var/www/latest.zip
 
-#CP the .bashrc to the container for autorun
-#COPY srcs/.bashrc root/
+#Change wp-config.php in a pre-configured wp-config.php
+ADD srcs/wp-config.php /var/www/wordpress/wp-config.php
+ADD srcs/db_setup.sh /tmp/
+ADD srcs/wordpress.sql /tmp/
+ADD srcs/default /etc/nginx/sites-available/
+ADD srcs/config.inc.php /usr/share/phpMyAdmin/
 
 ENTRYPOINT /etc/init.d/nginx start \
+	&& /etc/init.d/php7.3-fpm start\
 	&& chown -R mysql:mysql /var/lib/mysql \
 	&& /etc/init.d/mysql start \
-	&& /etc/init.d/php7.3-fpm start \
+	&& sh /tmp/db_setup.sh \
+	&& mysql < /usr/share/phpMyAdmin/sql/create_tables.sql -u root \
+	&& mysql < /tmp/wordpress.sql -u root wordpress \
+	&& mkdir /usr/share/phpMyAdmin/tmp \
+	&& chmod 777 /usr/share/phpMyAdmin/tmp \
 	&& /bin/bash
 
 
