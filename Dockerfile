@@ -43,8 +43,6 @@ ADD srcs/default /etc/nginx/sites-available/
 ADD srcs/config.inc.php /usr/share/phpMyAdmin/
 ADD srcs/nginx-selfsigned.crt /etc/ssl/certs/nginx-selfsigned.crt
 ADD srcs/nginx-selfsigned.key /etc/ssl/private/nginx-selfsigned.key
-ADD srcs/dhparam.pem /etc/ssl/certs/dhparam.pem;
-ADD srcs/ssl-redirect.conf /etc/nginx/default.d/
 
 ENTRYPOINT /etc/init.d/nginx start \
 	&& /etc/init.d/php7.3-fpm start\
@@ -55,7 +53,6 @@ ENTRYPOINT /etc/init.d/nginx start \
 	&& mysql < /tmp/wordpress.sql -u root wordpress \
 	&& mkdir /usr/share/phpMyAdmin/tmp \
 	&& chmod 777 /usr/share/phpMyAdmin/tmp \
-	&& chmod 77 /etc/nginx/default.d \
 	&& /bin/bash
 
 
